@@ -1,0 +1,36 @@
+$ ./com_init.sh 
+
+Status for device COM4:
+-----------------------
+    Baud:            921600
+    Parity:          None
+    Data Bits:       8
+    Stop Bits:       2
+    Timeout:         OFF
+    XON/XOFF:        OFF
+    CTS handshaking: OFF
+    DSR handshaking: OFF
+    DSR sensitivity: OFF
+    DTR circuit:     OFF
+    RTS circuit:     ON
+
+
+Status for device COM8:
+-----------------------
+    Baud:            921600
+    Parity:          None
+    Data Bits:       8
+    Stop Bits:       2
+    Timeout:         OFF
+    XON/XOFF:        OFF
+    CTS handshaking: OFF
+    DSR handshaking: OFF
+    DSR sensitivity: OFF
+    DTR circuit:     OFF
+    RTS circuit:     ON
+
+
+o**************8
+home postion
+0, 100000, 400 um
+

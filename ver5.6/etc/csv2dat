@@ -1,0 +1,12 @@
+#! /bin/tcsh
+#
+#
+
+ if ( $#argv == 1 ) then
+   cat $argv[1] |tr ':' '#' >  .cvs2dat.file
+ else
+   tr ':' '#' >  .cvs2dat.file
+ endif
+ tr ',' '\n' <  .cvs2dat.file
+
+exit

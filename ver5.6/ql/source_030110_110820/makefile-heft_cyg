@@ -1,0 +1,72 @@
+# Makefile of hiroplot
+# by Hiro Miyasaka
+TARGET = hiroplot ph_hist
+all: $(TARGET)
+
+# Which compiler
+CC  = gcc
+
+# Where to install
+INSTDIR = ./
+
+# Lib options
+
+# Options
+#OPT = -DLINUX -DHEFT
+#OPT = -DLINUX -DDB
+OPT = -DCYGWIN -DHEFT
+#OPT = -DCYGWIN -DDB
+
+HIROP = hiroplot-heft
+#HIROP = hiroplot-db
+PHHIS = ph_hist-heft
+#PHHIS = ph_hist-db
+
+# GNUPLOT FILE
+GNUFILE = hist_def.gnu map_def.gnu
+
+hiroplot: hiroplot.o gptcall.o argset.o hiroplot_sub.o
+	$(CC) -O -o $(HIROP) hiroplot.o gptcall.o argset.o hiroplot_sub.o
+
+ph_hist: ph_hist.o read_event_2.o temp.o
+	$(CC) -O -o $(PHHIS) ph_hist.o read_event_2.o temp.o
+
+ph_hist.o: ph_hist.c defs.h define_struct.h ph_hist.h
+	$(CC) $(OPT) -c ph_hist.c
+
+read_event_2.o: read_event_2.c defs.h
+	$(CC) $(OPT) -c read_event_2.c
+
+hiroplot.o: hiroplot_2.c argset.c hiroplot.h gptcall.h
+	$(CC) -o hiroplot.o $(OPT) -c hiroplot_2.c
+
+hiroplot_sub.o: hiroplot_sub.c hiroplot.h
+	$(CC) $(OPT) -c hiroplot_sub.c
+
+argset.o: argset.c
+	$(CC) -c argset.c
+
+temp.o: temp.c
+	$(CC) -c  temp.c
+
+gptcall.o: gptcall.c gptcall.h
+	$(CC) -c gptcall.c
+
+clean:
+	-rm *.o *.exe
+
+install:
+	@if [ -d $(INSTDIR) ];\
+        then \
+                cp $(HIROP) $(INSTDIR);\
+                cp $(PHHIS) $(INSTDIR);\
+                cp .hist.gnu $(INSTDIR);\
+                cp .temp.gnu $(INSTDIR);\
+                cp .wave.gnu $(INSTDIR);\
+                cp .cnt.gnu  $(INSTDIR);\
+                cp .map-heft.gnu $(INSTDIR);\
+                echo "Installed $(TARGET) $(GNUFILE) in $(INSTDIR)";\
+        else \
+                echo "Sorry, $(INSTDIR) does not exist";\
+        fi
+

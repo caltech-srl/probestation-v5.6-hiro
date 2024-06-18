@@ -1,0 +1,54 @@
+From: miyasaka@srl.caltech.edu
+To: miyasaka@srl.caltech.edu
+Subject: [ASIC] 	./data/U09-240523-3/U09
+
+Dear tester
+
+here is test log of current test.
+Thu, May 23, 2024 8:13:46 PM UPLOAD MD
+md00.txt
+READ
+P24> OK< reDef * reDef / reDef  0 4085
+P24> 
+P24> md01.txt
+READ
+P24> OK 1 6660
+MDA> 
+MDA> md02.txt
+READ
+MDA> OK 155 2 7345
+MDA> 
+MDA> md03.txt
+READ
+MDA> OK 3 24625
+MDA> 
+MDA> md04.txt
+READ
+MDA> OK 4 27648
+MDA> 
+MDA> md05.txt
+READ
+MDA> OKmd06.txt
+READ
+MDA> OKmd07.txt
+READ
+MDA> OK 7 32186
+MDA> 
+MDA> Thu, May 23, 2024 8:14:19 PM 4VSEL 45
+45 4VSEL ! 
+20:14:29 MDA> CMD! 
+20:14:29 MDA> Thu, May 23, 2024 8:14:36 PM GLOBALDC
+Thu, May 23, 2024 8:16:57 PM PIXELDC
+Thu, May 23, 2024 8:24:44 PM TESTADC
+Thu, May 23, 2024 8:29:47 PM NDISCTEST
+Thu, May 23, 2024 9:22:16 PM START_MTERM
+Thu, May 23, 2024 9:22:19 PM SCOPE_PRE
+Thu, May 23, 2024 9:33:10 PM SINGLE_PRE
+Thu, May 23, 2024 9:33:43 PM SCOPE_SHA
+Thu, May 23, 2024 9:44:21 PM SINGLE_SHA
+Thu, May 23, 2024 9:44:55 PM SCOPE_CPM
+Thu, May 23, 2024 9:55:15 PM SINGLE_CPM
+Thu, May 23, 2024 9:57:15 PM CALON
+save bin data to ./data/U09-240523-3/U09_3_pls.BIN
+Thu, May 23, 2024 10:17:28 PM Sending data to network space.....
+Thu, May 23, 2024 10:17:28 PM e-mail sent to admin

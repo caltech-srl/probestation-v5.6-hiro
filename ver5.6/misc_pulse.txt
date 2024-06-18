@@ -1,0 +1,44 @@
+:p
+:p
+:p
+:p
+:p
+100 DS!  
+:p
+:p
+:p
+100 CALTIM ! 
+:p
+:p
+-1 ORFLG !
+:p
+:p
+:p
+ZOBITS
+:p
+:p
+:p
+1048 NDAC!   
+:p
+:p
+NMODE        
+TGO1 
+:p
+:p
+:p
+:p
+:p
+ALLON 
+:p
+:p
+ECMD!  
+:p
+:p
+:p
+:p
+:p
+0 0 XYSEL  
+:p
+:p
+:p
+:p

@@ -1,0 +1,4 @@
+
+Dear tester
+
+here is test log of current test.

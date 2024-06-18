@@ -1,0 +1,441 @@
+HERE 4 CODEADR0 !		( mark start of HEFT code section )
+
+DECIMAL 
+
+: PAUS1 DTIM1 @ FOR NEXT ;
+: PAUS2 DTIM2 @ FOR NEXT ;
+: PAUS3 DTIM3 @ FOR NEXT ;
+: PAUS5 DTIM5 @ FOR NEXT ;
+: PAUS6 DTIM6 @ FOR NEXT ;
+: PAUS7 DTIM7 @ FOR NEXT ;
+: PAUS8 DTIM8 @ FOR NEXT ;
+: PAUS9 DTIM9 @ FOR NEXT ;
+: PAUS10 DTIM10 @ FOR NEXT ; 
+
+: UTIM ;
+: -TIM g0@ $7FF AND g0! ;
+: TIM $B ASSIGN
+	lda -IF -1 ELSE 0 THEN
+	ITIM@ DROP
+	UTIM
+	TIMCNT 1+!
+	shl drop sta rti ;
+: +TIM TIM g0@ $7FF AND $800 XOR g0! ;
+
+: 500US 7332 FOR NEXT ;
+: 30US 439 FOR NEXT ;
+: 10US 146 FOR NEXT ;
+: P5 TP5 @ FOR NEXT ; 7332 TP5 !
+: TRY4													( test word that operates preamp reset )
+	FOR													( but does not generate a test pulse )
+		999 FOR 
+			CPRSTH 30US CPRSTL 500US 
+			TPULH 30US TPULL P5 
+		NEXT 
+	NEXT ;
+: TRY5										( test word that operates preamp reset )
+	FOR 													( and produces a test pulse )
+		99 FOR 
+			( PRERSTH 30US PRERSTL ) 500US 500US
+			TPULH 500US 500US TPULL P5 
+		NEXT 
+	NEXT ;
+
+: TRY6 0 NTRIG !										( test word that operates preamp reset )
+	FOR 													( and produces a test pulse )
+		199 FOR 
+			( PRERSTH 30US PRERSTL ) PAUS10
+			TPULH 30US TPULL
+		NEXT 
+	NEXT NTRIG ? ;
+
+: TRY7
+	FOR 
+		99 FOR
+			19 FOR 500US NEXT
+			TPULH 30US TPULL
+		NEXT
+	NEXT ;
+			
+
+: -HTX g0@ $EFF AND g0! ;
+: HTX $8 ASSIGN
+	lda -IF -1 ELSE 0 THEN
+	HTX-WPTR @ HTX-RPTR @ XOR 
+	IF 
+		ld 
+		$7FF AND HTX-BUF + 
+		ld 1+ st
+		@ [ 2 ] G! 
+	ELSE
+		-HTX 
+	THEN shl drop sta rti ;       
+: +HTX HTX g0@ $EFF AND $100 XOR g0! ;
+: HTX! HTX-WPTR @ $7FF AND HTX-BUF + ! HTX-WPTR 1+! ;
+: HTX@ HTX-RPTR @ $7FF AND HTX-BUF + @ HTX-RPTR 1+! ;
+: HTXFULL? HTX-WPTR @ HTX-RPTR @ - $7FF = ;
+: HTXMT? HTX-WPTR @ HTX-RPTR @ = ;
+
+: DISCTEST
+	15 FOR 50 I 2* - DISCSET ! CMD! 9999 FOR NEXT 0 TRY6 NEXT ;
+
+: DSCTEST
+	15 FOR I NDACSTEP @ * NDAC0 @ + NDAC! 49 FOR 500US NEXT 0 TRY6 NEXT ;
+
+: NDSCTEST 46 NDAC! 10000 DTIM10 ! ALLON
+	31 FOR
+		31 FOR
+			I J XYSEL 999999 FOR NEXT
+			CR I . J . DISCTEST
+		NEXT
+	NEXT 
+	CR ." DONE " ;
+
+: NDISCTEST 10000 DTIM10 ! ALLON 15 NDACSTEP @ * NDAC0 @ + NDAC!
+	31 FOR
+		31 FOR
+			I J XYSEL 3999999 FOR NEXT
+			CR I . J . DSCTEST 15 NDACSTEP @ * NDAC0 @ + NDAC! 
+			?KEY IF R> DROP R> DROP DROP EXIT THEN 
+		NEXT
+	NEXT 
+	CR ." DONE " ;
+
+: FORM12
+	0 >R
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR >R ELSE R> 2/ >R THEN
+	1 AND IF R> 2/ $800 XOR ELSE R> 2/ THEN ;
+
+: INTADC
+	RG4 @ $FFFFFD AND sta
+											  lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ 
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ ;
+
+: DLY 5 FOR NEXT ;
+: INTADC2 DLY
+	RG4 @ $FFFFFD AND sta
+											  lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ DLY
+	lda 2 XOR [ 4 ] G! nop [ anew ] lda [ 4 ] G! nop [ anew ] [ 4 ] G@ ;	
+
+: INTADC3 DLY
+	RG4 @ $FFFFFD AND sta
+											  lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@
+	lda 2 XOR [ 4 ] G! DLY lda [ 4 ] G! nop [ anew ] [ 4 ] G@ ;
+
+: HINTADC
+	IADCGOP BEGIN IADONE? UNTIL [ 7 ] G@ ;
+		
+: ADC@
+	ADCCLRL HINTADC
+ 	ADCCLKH ADCCLRH ( FORM12 ) ;
+
+: NADC@
+	0
+	NADC @ 1- FOR ( ADCCLRL INTADC3 ADCCLRH FORM12 ) ADC@ + NEXT
+	NADC @ / ;
+
+: BITEST 0
+	8 FOR 
+		ADCCLKL [ 4 ] G@
+		1 AND IF 1+ ELSE 1- THEN
+		ADCCLKH
+	NEXT
+	0< IF 0 ELSE 1 THEN ;
+
+: CMP@
+	ADCGOH FOR NEXT ADCGOL [ 6 ] G@ ;
+
+: BITEST1
+	ADCGOH $A FOR NEXT ADCGOL
+	[ 6 ] G@ 8 AND ;
+
+: BITEST2
+	ADCGOH $5A FOR NEXT ADCGOL
+	[ 6 ] G@ $20 AND ;
+
+: BITEST3
+	ADCGOH $C4 FOR NEXT ADCGOL
+	[ 6 ] G@ $40 AND ;
+
+: BINSRCH
+	$8000 $8000
+	11 FOR
+		DUP NDAC! 25 FOR NEXT
+		38 CMP@
+		( DUP $FFF AND 6 26 WITHIN )
+		0
+		IF DROP R> DROP 0 >R
+		ELSE
+			$10 AND IF ELSE OVER XOR THEN
+			>R 2/ R> OVER XOR
+		THEN
+	NEXT >R DROP R> ;
+
+VARIABLE EXTVAL
+CREATE XI 10 ALLOT
+CREATE YI 10 ALLOT
+VARIABLE TDELAY 0 TDELAY !
+VARIABLE TDEL
+VARIABLE TADC
+VARIABLE NSTEP 5 NSTEP !
+
+: DELTA@									( assumes sigma = 300 external dac units )
+	DUP $FFF000 AND RR8 2/ 2/ 2/ 2/ >R
+	$FFF AND 750 * R> / 325 - ;
+
+: LINSRCH
+	NSTEP @ 1- FOR
+		DUP NDAC! 25 FOR NEXT
+		91 CMP@ DUP YI I + !
+		DELTA@ +
+		DUP XI I + !
+	NEXT DROP
+	0
+	NSTEP @ 2 - FOR
+		XI I + @ +
+	NEXT NSTEP @ 1- / ;
+
+: EADC@ [ 15 ] G@
+	BINSRCH 
+	( LINSRCH SWAP [ 15 ] G@ - TADC !
+	CR .
+	XI 10 DUMP 
+	YI 10 DUMP ) ;
+	
+VARIABLE DACOFF 3200 DACOFF !	
+	
+: PREPCAPS 
+	UPSELL LRSTH EINITH EINITL CLKON 1000 FOR NEXT EINITH ;
+
+VARIABLE PRDELAY 10 PRDELAY !
+
+: ADCT@ 
+	( PREPCAPS )
+	( LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL )
+	( ADCCLRL ) ADCCLKH ( PRECHL 1000 FOR NEXT )
+	ADCCLRH PRECHH PRDELAY @ FOR NEXT PRECHL
+	ADCTESTH 
+	[ 15 ] G@ TDELAY @ FOR NEXT [ 15 ] G@ - TDEL !
+	[ 15 ] G@ ADC@ SWAP [ 15 ] G@ - TADC !
+	ADCTESTL ;
+
+: NADCT@ 
+	( PREPCAPS )
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRL ADCCLKH PRECHL 1000 FOR NEXT
+	ADCCLRH PRECHH 4 FOR NEXT PRECHL
+	ADCTESTH 
+	[ 15 ] G@ NADC@ SWAP [ 15 ] G@ - TADC !
+	ADCTESTL ;
+
+: EADCT@ DACOFF @ NDAC! 150 FOR NEXT 
+	( PREPCAPS )
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRH PRECHH 10 FOR NEXT PRECHL
+	ADCTESTH
+	[ 15 ] G@ TDELAY @ FOR NEXT [ 15 ] G@ - TDEL !
+	EADC@
+	ADCTESTL ;
+
+: EADCN@ DACOFF @ NDAC! 150 FOR NEXT ADCTESTL
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRH PRECHH 100 FOR NEXT PRECHL
+	ADCTESTH
+	99 FOR EADC@ I EHISTA + ! NEXT 
+	ADCTESTL ;
+
+: EADCN@2 DACOFF @ NDAC! 150 FOR NEXT ADCTESTL
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRH PRECHH 150 FOR NEXT PRECHL ADCTESTH
+	4095 FOR
+		( DACOFF @ NDAC!
+		PRECHH 150 FOR NEXT PRECHL
+		ADCTESTH )
+		[ 15 ] G@ TDELAY @ FOR NEXT [ 15 ] G@ - TDEL !
+		[ 15 ] G@ EADC@ 2/ 2/ 2/ 2/ 2/ I EHISTA + ! [ 15 ] G@ - TADC !
+		( ADCTESTL )
+	NEXT ADCTESTL ;
+
+: ADCN@2 DACOFF @ NDAC! 150 FOR NEXT ADCTESTL
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRH PRECHH 150 FOR NEXT PRECHL ADCTESTH
+	4095 FOR
+		( DACOFF @ NDAC!
+		PRECHH 150 FOR NEXT PRECHL
+		ADCTESTH )
+		( [ 15 ] G@ TDELAY @ FOR NEXT [ 15 ] G@ - TDEL ! )
+		[ 15 ] G@ ADC@ I EHISTA + ! [ 15 ] G@ - TADC !
+		( ADCTESTL )
+	NEXT ADCTESTL ;
+
+: EHIST. FOR 7333 FOR NEXT CR DUP 5 U.R DUP EHISTA + @ 7 U.R 1+ NEXT DROP ;
+
+
+: ZEHIST EHISTA 4096 ZFILL ; 
+
+: EADCHIST ZEHIST
+	FOR EADCT@ 48 / $FFF AND EHISTA + 1+! NEXT ;
+
+: EADCHIST2 ZEHIST
+	LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRH
+	FOR
+		0 NDAC! 150 FOR NEXT
+		PRECHH 100 FOR NEXT PRECHL
+		ADCTESTH
+		[ 15 ] G@ TDELAY @ FOR NEXT [ 15 ] G@ - TDEL !
+		[ 15 ] G@ EADC@ 2/ 2/ 2/ 2/ $FFF AND EHISTA + 1+! [ 15 ] G@ - TADC !
+		ADCTESTL
+	NEXT ;
+	 
+
+: NEADCT@ 
+	FOR 1000 FOR EADCT@ DROP 2000 FOR NEXT NEXT NEXT ;
+
+: ADCTN@ ( UPREADH ) UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	ADCCLRL ADCCLKH PRECHL 1000 FOR NEXT
+	ADCCLRH PRECHH 4 FOR NEXT PRECHL
+	ADCTESTH 
+	4095 FOR ADC@ I EHISTA + ! NEXT 
+	ADCTESTL ;
+
+: CMPTEST 
+	FOR 
+		100000 FOR 
+			PRECHH 4 FOR NEXT PRECHL 
+			ADCTESTH 4 FOR NEXT
+			ADCCLKL ADCCLKH 
+			ADCTESTL
+			100 0 FOR NEXT
+		NEXT
+	NEXT ;
+
+: ADCHST LRSTH UPLOCKH
+	UPREADH UPCHENL UPCTENL UPRSENL UPCLKL UPSELH UPCLKH UPCLKL
+	FOR ADCT@ $FFF AND EHISTA + 1+! NEXT ;
+: ADCHIST ZEHIST ADCHST ;
+
+VARIABLE ILO
+VARIABLE MSUM
+VARIABLE NSUM
+: MEAN@ 
+	0 MSUM ! 0 NSUM !
+	OVER ILO !
+	FOR DUP EHISTA + @ DUP NSUM +! OVER ILO @ - * MSUM +! 1+ NEXT DROP
+	MSUM @ 10 * NSUM @ / ILO @ 10 * + ;
+: NADCHIST ZEHIST FOR NADCT@ $FFF AND EHISTA + 1+! NEXT ;
+
+VARIABLE MTHRESH 1000 MTHRESH !
+VARIABLE WPEAK 6 WPEAK !
+VARIABLE IPEAK
+VARIABLE III
+VARIABLE IIIHI
+VARIABLE IIILO
+: N1+!
+	DUP @ 4094 > 
+	IF DROP -1 R> DROP EXIT 
+	ELSE 1+!
+	THEN ;
+
+: PEAK@
+	BEGIN III N1+! EHISTA III @ + @ MTHRESH @ > UNTIL
+	III @ IIILO !
+	BEGIN III N1+! EHISTA III @ + @ MTHRESH @ < UNTIL
+	III @ IIIHI !
+	IIILO @ IIIHI @ + 2/ WPEAK @ - 
+	WPEAK @ 2* 0 ;
+	
+: MEANS@ III !
+	FOR
+		PEAK@ IF R> DROP EXIT THEN
+		MEAN@ CR .
+	NEXT ;
+
+: ADCSTOR ZEHIST 255 FOR ADCT@ EHISTA I + ! NEXT ;
+
+: G500US 16 FOR PAUSE NEXT ;
+: GP5 GTP5 @ FOR PAUSE NEXT ; 16 GTP5 !
+: GTRY4													( test word that operates preamp reset )
+	( 1330 ) 1773 ITIM! +TIM -1 CGON !
+	FOR													( but does not generate a test pulse )
+		999 FOR 
+			( PRERSTH PAUSE PRERSTL ) G500US 
+			PAUSE PAUSE PAUSE GP5 
+		NEXT 
+	NEXT -TIM 0 CGON ! ;
+
+VARIABLE NHI VARIABLE NLO
+VARIABLE THRESH
+: N@ 0 NHI ! 0 NLO ! 999 FOR ADCT@ THRESH @ < IF NLO 1+! ELSE NHI 1+! THEN NEXT ;
+
+: TESTADC $FFFF NDAC! 1000000 PAWZ1 ! PAWZ 100000 PAWZ1 !
+	$FFFF DACVAL ! 32535 FOR CR DACVAL @ DUP 6 U.R NDAC! PAWZ 15 FOR ADCT@ 5 U.R NEXT -1 DACVAL +! NEXT
+	CR ." DONE " ;
+
+: ADCDIF ZEHIST $FFFF DACVAL ! FOR CR DACVAL @ DUP 6 U.R NDAC! PAWZ 1000 ADCHST -1 DACVAL +! NEXT ;
+
+: PIXDC SCOPEDC BASE @ 64 BASE !
+	31 FOR CR
+		31 FOR
+			31 I - 31 J - XYSEL PAWZ NSDADC@ 2/ 2/ 2/ 2/ 3 U.R
+		NEXT
+	NEXT BASE ! ;
+
+: BASE64. BASE @ 64 BASE ! 63 FOR 63 I - . NEXT BASE ! ;
+
+: PIXELDC 1000000 PAWZ1 !
+	CR 1 SCOPSEL ! ALLOFF CMD! 99 FOR PAWZ NEXT PIXDC
+	CR 0 SCOPSEL ! ALLON CMD! 99 FOR PAWZ NEXT PIXDC
+	CR 1 SCOPSEL ! CMD! PIXDC
+	CR 2 SCOPSEL ! CMD! PIXDC 2000000 PAWZ1 !
+	CR 3 SCOPSEL ! CMD! PIXDC 
+	CR ." DONE " ;
+
+ 5 . HERE .

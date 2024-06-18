@@ -1,0 +1,113 @@
+: TASK VARIABLE 2 ALLOT ; 
+VARIABLE TASKPTR TASK OPERATOR TASK POWMAN VARIABLE POFF
+HERE $20 / 1+ $20 * HERE - $1B + ALLOT 
+CREATE RCV-BUF $2B ALLOT
+CREATE XMT-BUF $800 ALLOT
+VARIABLE RCV-RPTR VARIABLE RCV-WPTR
+VARIABLE XMT-RPTR VARIABLE XMT-WPTR
+VARIABLE XMT-STOP VARIABLE CGON
+
+HERE 1 CODEADR0 !							( mark start address of MT code )
+
+CODE wake
+	pop dup push
+	zero com add
+	TASKPTR 
+	ldi sta st ret 
+' wake $100000 OR CONSTANT WAKE
+CODE BUILD
+	TASKPTR 
+	ldi sta ld sta
+	ldp drop ldp drop
+	ld dup push dup
+	push push dup st
+	sta pop stp pop
+	stp pop st ret
+CODE ACTIVATE
+	sta WAKE ldi stp pop st ret
+CODE PAUSE
+	TASKPTR 
+	ldi sta ld sta
+	ldp drop pop stp
+	ld push ret
+CODE STOP
+	TASKPTR
+	ldi sta ld dup
+	sta ldp drop pop
+	stp ld dup push
+	push sta pop st ret
+CODE HALT
+	dup sta ldp drop
+	ldp drop ld push
+	sta pop st ret
+: +INT $1001 g0! ;
+: -INT $1000 g0! ;
+: ASSIGN R> SWAP ! ;
+: RCV! RCV-WPTR @ $1F AND RCV-BUF + ! RCV-WPTR 1+! ;
+: RCV@ RCV-RPTR @ $1F AND RCV-BUF + @ RCV-RPTR 1+! ;
+: RCVFULL? RCV-WPTR @ RCV-RPTR @ - $1F = ;
+: RCVMT? RCV-WPTR @ RCV-RPTR @ = ;
+: XMT! XMT-WPTR @ $7FF AND XMT-BUF + ! XMT-WPTR 1+! ;
+: XMT@ XMT-RPTR @ $7FF AND XMT-BUF + @ XMT-RPTR 1+! ;
+: XMTFULL? XMT-WPTR @ XMT-RPTR @ - $3FF = ;
+: XMTMT? XMT-WPTR @ XMT-RPTR @ = ;
+: RCV 9 ASSIGN
+	lda -IF -1 ELSE 0 THEN
+	g1@ RCV-RPTR @ RCV-WPTR @ - $FFFFE1 XOR
+	IF ld $1F AND RCV-BUF XOR
+		ld 1+ st !		
+		XMT-STOP @ IF ELSE WAKE OPERATOR ! THEN
+		shl drop sta rti
+	ELSE DROP 
+	THEN
+	shl drop sta rti ;
+: +RCV RCV g0@ $DFF AND $200 XOR g0! ;
+: -RCV g0@ $DFF AND g0! ;
+: key -INT RCVMT? IF STOP THEN +INT RCV@ ;
+: ?KEY RCVMT? IF 0 ELSE RCV@ -1 THEN ;
+: -XMT g0@ $BFF AND g0! ;
+: XMT $A ASSIGN
+	lda -IF -1 ELSE 0 THEN
+	XMT-WPTR DUP @ XMT-RPTR @ XOR 
+	IF 
+		ld 
+		$7FF AND XMT-BUF + 
+		ld 1+ st
+		@ g1! 
+		@ 
+		XMT-RPTR @ XOR
+		IF
+		ELSE 	
+			XMT-STOP @  
+			IF WAKE OPERATOR ! 0 XMT-STOP ! THEN
+			shl drop sta rti
+		THEN
+	ELSE
+		DROP -XMT 
+	THEN shl drop sta rti ;       
+: +XMT XMT g0@ $BFF AND $400 XOR g0! ;
+: emit XMTFULL? IF -INT -1 XMT-STOP ! STOP THEN XMT! -INT +XMT +INT ;
+: PWP POWMAN ACTIVATE 0 POFF !
+	BEGIN
+		CGON @ POFF @ AND
+		IF $801001 ELSE $1001 THEN
+		g0! -1 POFF !
+	PAUSE
+	AGAIN ;
+: insmulti 
+	[ ' key ] ldi [ ' KEY ] ldi !
+	[ ' emit ] ldi [ ' EMIT ] ldi !
+	OPERATOR TASKPTR !
+	OPERATOR DUP 2 + !
+	-INT +RCV g1@ DROP +INT
+	POWMAN BUILD PWP ;
+insmulti
+
+: NOMULTI $80A55E DUP [ ' KEY ] ldi ! [ ' EMIT ] ldi ! -INT ;
+: FRESH NOFP NOMULTI 0 [ 0 ] G!
+		$28A79E [ ' DIAGNOSE ] ldi ! $6F5 2 ! FORGET ;  ( undo kluge to get START to execute at boot time )
+
+$54D44 $4B4 ! $413E20 $4B5 !
+
+HERE 1 CODEADR1 !							( mark end of MT code )
+1 . HERE .

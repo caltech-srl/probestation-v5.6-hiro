@@ -1,0 +1,49 @@
+
+( This file contains the words needed to pulse each pixel in the array )
+VARIABLE AROW 7 AROW !
+VARIABLE ACOL 7 ACOL !
+( VARIABLE TMPA )
+VARIABLE ACOLTMP
+VARIABLE WAITNUM 500 WAITNUM !
+
+: ALLWAIT	( This is the wait state when test pusling all pixels in the array )
+	BEGIN
+		PAUSE
+		NEV @  ( DUP . )
+		WAITNUM @ =				( The number of event for each pixel when pulsing all pixels in array )
+( want to put code in here which will make nev = 1000 when past a certain time limit )
+( that will prevent bad pixels that don't pulse from blocking the code here )
+	UNTIL ;
+
+
+: ALLPIXSTIM
+	ACOL !
+	AROW !
+	( ACOL ! )
+	EVOFF
+	0 RESCNT !
+	ZCNTRS
+	( 0 AROW ! )
+	( 0 ACOL ! )
+	( 31 FOR )
+	BEGIN
+		( 31 FOR )
+		BEGIN
+			AROW @ DUP . ACOL @ DUP . XYONSEL
+			AROW @ ACOL @ PIXSEL
+			( EVON )
+			ALLWAIT
+			EVOFF
+			ZCNTRS
+			AROW 1+!
+			AROW @
+			32 =
+		UNTIL
+		( NEXT )
+		ACOL 1+!
+		0 AROW !
+		ACOL @
+		32 =
+	UNTIL
+	( NEXT )
+	EVOFF ;

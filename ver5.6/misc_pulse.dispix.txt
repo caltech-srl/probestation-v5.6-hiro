@@ -1,0 +1,61 @@
+:p
+:p
+:p
+:p
+:p
+100 DS!  
+:p
+:p
+:p
+100 CALTIM ! 
+:p
+:p
+-1 ORFLG !
+:p
+:p
+:p
+ZOBITS
+:p
+:p
+:p
+1048 NDAC!   
+:p
+:p
+NMODE        
+TGO1 
+:p
+:p
+:p
+:p
+ALLON 
+:p
+ECMD!  
+:p
+:p
+:p
+:p
+19 0 DISPIX
+:p
+:p
+:p
+29 17 DISPIX
+:p
+:p
+:p
+25 19 DISPIX
+:p
+:p
+:p
+20 1 DISPIX
+:p
+:p
+:p
+ECMD!
+:p
+:p
+:p
+:p
+0 0 XYSEL  
+:p
+:p
+:p

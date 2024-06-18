@@ -1,0 +1,7 @@
+:p
+INIT
+10 10 LOOK
+:p
+ALLON
+CMD!
+:p

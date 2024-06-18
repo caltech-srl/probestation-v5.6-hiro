@@ -1,0 +1,19 @@
+:p
+:p
+:p
+1 SCOPSEL ! 
+:p 
+CMD!  
+:p 
+:p 
+NMODE 
+:p 
+:p 
+:p 
+2097 NDAC! 
+:p 
+:p 
+:p 
+:p 
+:p 
+:p 

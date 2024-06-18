@@ -1,0 +1,122 @@
+( HEFT Command Table )
+
+VARIABLE DBPTR									( pointer to next available mem loc for alloc data structures )
+VARIABLE ^PTR          						( used by ^ word. data buffer pointer )
+
+HERE 2 CODEADR0 !								( mark start of command table code section )
+: SIZE DBPTR @ SWAP OVER + DBPTR ! ;		( n -- DBPTR @ )
+: ^ ( x -- ) ^PTR @ ! ^PTR 1+! ;			( ^ - store x in word pointed to by ^PTR, and increment ^PTR )
+
+CREATE CMDTABLE 200 ALLOT
+CMDTABLE 200 ZFILL
+CMDTABLE DBPTR !
+
+1 SIZE CONSTANT DDLIM									( total number of words in command table to be dribbled )
+1 SIZE CONSTANT MODEFLG									( 0 => variable length raw mode, 1 => fixed length compressed mode )
+1 SIZE CONSTANT ORFLG									( 0 => don't accumulate "orbits", -1 => do )
+1 SIZE CONSTANT DT			 3 DT !					( 4 bits that control the post-trigger delay to sample freeze )
+
+2 SIZE CONSTANT TPULC		0 TPULC !				( column test pulser enable bits, double with lsb = col 0 )
+									0 TPULC 1+ !
+2 SIZE CONSTANT TPULR		0 TPULR !				( row test pulser enable bits, double with lsb = row 0 )
+									0 TPULR 1+ !
+1 SIZE CONSTANT SCOLSEL		0 SCOLSEL !				( scope column address )
+1 SIZE CONSTANT SROWSEL		0 SROWSEL !				( scope row address )
+1 SIZE CONSTANT SCOPSEL		1 SCOPSEL !				( least sig. two bits select: )
+1 SIZE CONSTANT SCOPEN*		0 SCOPEN* !				( lsb is scope enable* )
+1 SIZE CONSTANT GAINSEL		0 GAINSEL !				( least sig. two bits select gain: )
+1 SIZE CONSTANT EXTADCEN	0 EXTADCEN !			( lsbit )
+1 SIZE CONSTANT OFFSET		1 OFFSET !				( least sig. two bits selects offset: )
+1 SIZE CONSTANT DISCSET		50 DISCSET !			( least sig 8 bits sets threshold )
+1 SIZE CONSTANT INTADCEN	-1 INTADCEN !			( lsbit )
+1 SIZE CONSTANT CPSEL		0 CPSEL !				( lsbit )
+1 SIZE CONSTANT 4VADJEN*	0 4VADJEN* !			( lsbit )
+1 SIZE CONSTANT 4VSEL		76 4VSEL !				( seven least bits adjust 4Vref )
+1 SIZE CONSTANT VPL2SEL		11 VPL2SEL !				( four least bits adjust vpl2 )
+1 SIZE CONSTANT VPL3SEL		4 VPL3SEL !			( four least bits adjust vpl3 )
+1 SIZE CONSTANT VNL1SEL		3 VNL1SEL !				( two least bits adjust vnl1 )
+
+
+
+1 SIZE CONSTANT NADC		1 NADC !				( number of ADC interations )
+64 SIZE CONSTANT PIXEN								( pixel enable bit array for db chip )
+													( a double for each row, starting with row 0 )
+													( least significant bit of double for col 0 )
+													( transpose of format of DBITS )
+
+1 SIZE CONSTANT DTIM1		20000 DTIM1 !				( set length of PAUS1 )
+1 SIZE CONSTANT DTIM2		0 DTIM2 !
+1 SIZE CONSTANT DTIM3		25 DTIM3 !
+1 SIZE CONSTANT DTIM5		15 DTIM5 !
+1 SIZE CONSTANT DTIM6		15 DTIM6 !
+1 SIZE CONSTANT DTIM7		2000 DTIM7 !
+1 SIZE CONSTANT DTIM8		312 DTIM8 !
+1 SIZE CONSTANT DTIM9		9000 DTIM9 !
+1 SIZE CONSTANT DTIM10		700 DTIM10 !
+1 SIZE CONSTANT DTIM11 		659 DTIM11 !
+1 SIZE CONSTANT RSTPAUS		650 RSTPAUS !			( should be 40 usec )
+
+1 SIZE CONSTANT NPIXLIM		31 NPIXLIM !			( maximum number of pixels in event )
+1 SIZE CONSTANT STARTSYNC	$AAAAAA STARTSYNC !	( pattern used at beginning of event data format )
+1 SIZE CONSTANT RSTLEN 		44000 RSTLEN !
+1 SIZE CONSTANT STIMLEN		500000 STIMLEN !		( maximum time interval between test pulses )
+1 SIZE CONSTANT RANDFLG 	-1 RANDFLG !
+1 SIZE CONSTANT REFFLG		-1 REFFLG !
+1 SIZE CONSTANT REFROW#		11 REFROW# !
+1 SIZE CONSTANT REFCOL#		1 REFCOL# !
+1 SIZE CONSTANT LCT 			99 LCT !
+1 SIZE CONSTANT CALTIM		100 CALTIM !
+1 SIZE CONSTANT COL-LOW		9 COL-LOW !
+1 SIZE CONSTANT COL-HI		13 COL-HI !
+1 SIZE CONSTANT ROW-LOW		9  ROW-LOW !
+1 SIZE CONSTANT ROW-HI		13 ROW-HI !
+1 SIZE CONSTANT SHLDREJ		-1 SHLDREJ !
+2 SIZE CONSTANT ECFAC		0.028 ECFAC F!
+1 SIZE CONSTANT ESCALE		4 ESCALE !
+1 SIZE CONSTANT STIMFLG 	-1 STIMFLG !
+4 SIZE CONSTANT STCOL		1 STCOL !
+									1 STCOL 1+ !
+									10 STCOL 2 + !
+									10 STCOL 3 + !
+4 SIZE CONSTANT STROW		1 STROW !
+									1 STROW 1+ !
+									10 STROW 2 + !
+									10 STROW 3 + !
+4 SIZE CONSTANT STSIDE		-1 STSIDE !
+									0 STSIDE 1+ !
+									-1 STSIDE 2 + !
+									0 STSIDE 3 + !
+1 SIZE CONSTANT CALCOLLIM  31 CALCOLLIM !
+1 SIZE CONSTANT DCALCOL		1 DCALCOL !
+1 SIZE CONSTANT CALCOL0		0 CALCOL0 !
+1 SIZE CONSTANT CALROWLIM	31 CALROWLIM !
+1 SIZE CONSTANT DCALROW		1 DCALROW !
+1 SIZE CONSTANT CALROW0		0 CALROW0 !
+1 SIZE CONSTANT OFFTOG		0 OFFTOG !
+1 SIZE CONSTANT VECTOR#		810 VECTOR# !
+1 SIZE CONSTANT APIXSEC		1 APIXSEC !
+1 SIZE CONSTANT NITERPIX	3 NITERPIX !
+1 SIZE CONSTANT MITERPIX    2 MITERPIX !
+1 SIZE CONSTANT ADISCTHR	$480 ADISCTHR !
+1 SIZE CONSTANT BDISCTHR	$480 BDISCTHR !
+1 SIZE CONSTANT PRE5V		410 PRE5V !
+1 SIZE CONSTANT LPMTHRS		0 LPMTHRS !
+1 SIZE CONSTANT HPMTHRS		0 HPMTHRS !
+1 SIZE CONSTANT CZTHV		0 CZTHV !
+1 SIZE CONSTANT PMTHV		0 PMTHV !
+1 SIZE CONSTANT T9			4 T9 !
+1 SIZE CONSTANT T10			3 T10 !
+1 SIZE CONSTANT FREQ			43 FREQ !
+
+1 SIZE CONSTANT SPAUSFLG	0 SPAUSFLG !
+1 SIZE CONSTANT SPAUSLIM	2000 SPAUSLIM !
+1 SIZE CONSTANT SPAUSCNT	0 SPAUSCNT !
+
+1 SIZE CONSTANT MUXSET		0 MUXSET !
+
+
+																		
+DBPTR @ CMDTABLE - DDLIM !				( compute and store number of 3 byte words in command table )
+DDLIM ?
+HERE 2 CODEADR1 !
+2 . HERE .

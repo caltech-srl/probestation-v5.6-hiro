@@ -1,0 +1,31 @@
+#! /bin/csh
+
+# This shell will remove the ^M in files.
+# To use this shell you have to input the argment as follows:
+#       >rm015 'string'  
+# the string stands for grep the file as you want to rename.
+# dont forget to cougth then with ''.
+# 
+#  exp.  >rm015 '*.f'
+# 
+#                            1997.12.4 Miyasaka
+
+ if ( $#argv < 1 ) then
+    echo "Error ! :input the grep argment in option."
+    echo "   ex.  > rm015 \'test\'"
+ else
+   set DAT = `ls $argv[1] |cat `
+   @ a = 1
+   set NF2 = `echo $DAT | awk '{print NF}'`
+   echo 'Total changing files are : '$NF2
+   while ( $a <=  $NF2 )
+     set DAT2 = `echo $DAT | awk '{print $'$a'}'`
+     echo 'remove ^M in '$DAT2
+#      cat -v $DAT2 | tr -d '^M' > .rm015.tmp.file
+      cat  $DAT2 | tr -d '' > .rm015.tmp.file
+     mv .rm015.tmp.file $DAT2
+     @ a += 1
+   end 
+ endif
+
+exit

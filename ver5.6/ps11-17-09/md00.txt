@@ -1,0 +1,479 @@
+( FORTH extensions, improvements )
+
+DECIMAL
+
+CODE ZFILL zero com add push sta anew zero stp times nop ret ;
+HERE $18000 OVER - ZFILL					( zero memory to make post-compile checksums reproducible )
+$800000 ' 1- 1 - @ OR ' 1- 1 - !			( make 1- an immediate word )
+: @1+ sta ldp lda ;
+: !1+ sta stp lda ;
+: MOVE 1- FOR OVER @ OVER ! 1+ >R 1+ R> NEXT DROP DROP ;  ( src dest cnt -- )
+: ANDMOVE 1- FOR OVER @ OVER @ AND st 1+ >R 1+ R> NEXT DROP DROP ;  ( src dest cnt -- )
+: ORMOVE 1- FOR OVER @ OVER @ OR st 1+ >R 1+ R> NEXT DROP DROP ;  ( src dest cnt -- )
+: < - 2* -IF DROP -1 ELSE DROP 0 THEN ;
+: > SWAP - 2* -IF DROP -1 ELSE DROP 0 THEN ;
+
+CODE * ( n n -- n )
+   sta zero
+   mul mul mul mul
+   mul mul mul mul
+   mul mul mul mul
+   mul mul mul mul
+   mul mul mul mul
+   mul mul mul mul
+   drop drop lda
+   ret
+
+CODE / ( n n -- q )
+   com one add push
+   sta pop zero
+   ( then )
+   div div div div
+   div div div div
+   div div div div
+   div div div div
+   div div div div
+   div div div div
+   div one xor shr
+   drop drop lda
+	ret
+
+: SPLIT dup [ $FC0000 ] ldi and rr8 rr8 shr shr .
+        dup [  $3F000 ] ldi and rr8 shr shr shr shr .
+        dup [    $FC0 ] ldi and shr shr shr shr shr shr .
+            [     $3F ] ldi and . ;
+
+( misc simple floating point )
+( format: exp on top, 23 bit mantissa next, msb is sign, )
+( such that: 1 = 0 on top, $400000 next, and )
+(           -1 = 0 on top, $C00000 next, and )
+(            2 = 1 on top, $400000 next, and )
+(           .5 = -1 on top, $400000 next, and )
+(           .75 = -1 on top, $600000 next. )
+DECIMAL
+
+VARIABLE FPLIM
+VARIABLE FPTR
+VARIABLE FS
+VARIABLE ES
+VARIABLE PLACE
+VARIABLE NFSIG 5 NFSIG !
+VARIABLE POW10
+VARIABLE FSIGN
+CREATE TVAR2 2 ALLOT
+CREATE TSUM 2 ALLOT
+ARRAY CODEADR0 10 ALLOT			( start addresses for code sections, used for checksums )
+ARRAY CODEADR1 10 ALLOT			( end addresses for code sections )
+ARRAY CODECHKS 10 ALLOT			( check sums for code sections )
+VARIABLE CODECHK				   ( sum of checksums )
+
+HERE 0 CODEADR0 !					( mark start address of FP code section )
+
+$25 CONSTANT BASE
+$30 CONSTANT TEXT
+
+: I>F DUP 
+	IF $16 >R
+		DUP 2* 
+			-IF DROP
+				NEGATE
+				BEGIN
+					DUP $400000 AND
+					IF $800000 XOR R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			ELSE DROP
+				BEGIN
+					DUP $400000 AND
+					IF R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			THEN
+	ELSE 0 
+	THEN ;
+
+: UI>F DUP 
+	IF 
+		DUP 0< 
+		IF $17 >R 2/ $7FFFFF AND
+		ELSE $16 >R 
+		THEN 
+		BEGIN
+			DUP $400000 AND
+			IF R> EXIT 
+			ELSE 2* R> 1- >R 
+			THEN
+		AGAIN
+	ELSE 0 
+	THEN ;
+
+: F* 
+	OVER OVER OR
+	IF															( top number is non-zero )
+		>R >R
+		OVER OVER OR
+		IF														( next number is non-zero )
+			R> sta R> + 1+ >R lda						( sum of exponents plus one on ret stk ) 
+			OVER OVER XOR 2*
+			-IF DROP											( result will be negative )
+				2* >R 2* R> 
+   			sta zero
+   			mul mul mul mul mul mul mul mul
+   			mul mul mul mul mul mul mul mul
+   			mul mul mul mul mul mul mul mul
+				NIP 2/ $7FFFFF AND
+				BEGIN
+					DUP $400000 AND
+					IF $800000 XOR R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			ELSE DROP										( result will be positve )
+				2* >R 2* R> 
+   			sta zero
+   			mul mul mul mul mul mul mul mul
+   			mul mul mul mul mul mul mul mul
+   			mul mul mul mul mul mul mul mul
+				NIP 2/ $7FFFFF AND
+				BEGIN
+					DUP $400000 AND
+					IF R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			THEN
+		ELSE													( next number is zero )
+			R> DROP R> DROP
+		THEN
+	ELSE														( top number is zero )
+		DROP DROP DROP DROP
+		0 0
+	THEN ;
+
+: F/ 
+	OVER OVER OR
+	IF															( top number is non-zero )
+		>R >R
+		OVER OVER OR
+		IF														( next number is non-zero )
+			R> sta R> NOT + 1+ >R lda					( diff of exponents on ret stk ) 
+			OVER OVER XOR 2*
+			-IF DROP											( result will be negative )
+				>R	sta 
+				R> $7FFFFF AND NOT 1+					( prepare divisor )
+				lda $7FFFFF AND
+				DUP 1 AND									( put lsb of dividend into msb of A reg )
+				IF $800000 sta ELSE 0 sta THEN
+				2/ div										
+				div div div div div div div div 
+				div div div div div div div div 
+				div div div div div div div div
+				drop drop lda 2/ $7FFFFF AND
+				BEGIN
+					DUP $400000 AND
+					IF $800000 XOR R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			ELSE DROP										( result will be positve )
+				>R	sta 
+				R> $7FFFFF AND NOT 1+					( prepare divisor )
+				lda $7FFFFF AND
+				DUP 1 AND									( put lsb of dividend into msb of A reg )
+				IF $800000 sta ELSE 0 sta THEN
+				2/ div										
+				div div div div div div div div 
+				div div div div div div div div 
+				div div div div div div div div
+				drop drop lda 2/ $7FFFFF AND
+				BEGIN
+					DUP $400000 AND
+					IF R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			THEN
+		ELSE													( next number is zero )
+			R> DROP R> DROP
+		THEN
+	ELSE														( top number is zero )
+		DROP DROP DROP DROP
+		0 0
+	THEN ;
+
+: 2SCMP 2* -IF 2/ 2/ $3FFFFF AND NEGATE ELSE 2/ 2/ $3FFFFF AND THEN ;
+: ABSV DUP 2* -IF DROP NEGATE $800000 FSIGN ! ELSE DROP 0 FSIGN ! THEN ; 
+
+: F+
+	>R 2SCMP sta >R 2SCMP										( mantissas are converted to 2's compl and 2/'d )
+	lda R> R> OVER OVER >R >R - DUP							( b a expb-expa expb-expa | expb expa )
+	IF																	( expa not equal expb )
+		DUP 2*
+		-IF DROP														( expa > expb, so need to right shift b )
+			>R ( SWAP ) >R sta R> lda							( store expb-expa on ret stk, swap b to top )
+			R> NEGATE 1- FOR 2/ NEXT							( shift right b expa-expb times )
+			+ ABSV DUP												( add shifted b to a, convert to abs. value plus SIGN )
+			IF															( check for zero )
+				R> DROP R> 1+ >R									( expa+1 on ret, expb dropped )
+				BEGIN													( normalization loop )
+					DUP $400000 AND
+					IF FSIGN @ XOR R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			ELSE
+				R> DROP R> DROP 0 EXIT
+			THEN
+		ELSE DROP													( expa < expb, so right shift a and use expb )
+			1- FOR 2/ NEXT											( shift right a expb-expa times )
+			+ ABSV DUP												( add shifted b to a, convert to abs. value plus SIGN )
+			IF															( check for zero )
+				R> R> DROP 1+ >R									( expb+1 on ret, expa dropped )
+				BEGIN													( normalization loop )
+					DUP $400000 AND
+					IF FSIGN @ XOR R> EXIT 
+					ELSE 2* R> 1- >R 
+					THEN
+				AGAIN
+			ELSE
+				R> DROP R> DROP 0 EXIT
+			THEN
+		THEN
+	ELSE DROP														( expa = expb )
+		+ ABSV DUP												( add shifted b to a, convert to abs. value plus SIGN )
+		IF															( check for zero )
+			R> DROP R> 1+ >R									( expa+1 on ret, expb dropped )
+			BEGIN													( normalization loop )
+				DUP $400000 AND
+				IF FSIGN @ XOR R> EXIT 
+				ELSE 2* R> 1- >R 
+				THEN
+			AGAIN
+		ELSE
+			R> DROP R> DROP 0 EXIT
+		THEN
+	THEN ;
+
+: FNEGATE >R $800000 XOR R> ;
+
+: F- FNEGATE F+ ;
+
+: F>I
+	OVER OVER OR IF
+		>R DUP 2* 
+			-IF DROP -1 FSIGN ! ELSE DROP 0 FSIGN ! THEN
+		$7FFFFF AND
+		R> 
+		DUP 0< 	IF DROP DROP 0 EXIT THEN
+		DUP 0= 	IF DROP DROP 
+						FSIGN @ IF -1 ELSE 1 THEN EXIT 
+					THEN
+		DUP 22 < IF >R 22 R> - 1- FOR 2/ NEXT 
+						FSIGN @ IF NEGATE THEN EXIT 
+					THEN
+		DUP 22 = IF DROP FSIGN @ IF NEGATE THEN EXIT
+					ELSE 
+						FSIGN @ 
+						IF $800000 ELSE $7FFFFF THEN
+					THEN 
+	ELSE DROP DROP 0 
+	THEN ;
+
+: FIFR OVER OVER F>I DUP >R I>F F- R> ;
+: F0< DROP 2* -IF DROP -1 ELSE DROP 0 THEN ;
+: F< F- F0< ;
+: F> F- F0< NOT ;
+: F@ sta ldp >R ld R> ;
+: F! sta stp st ;
+
+CREATE LN2/LN10 -2 , 5050445 ,
+CREATE 10.0 2 ALLOT 10 I>F 10.0 F!
+CREATE 10^N  ( accurate powers of ten from 10^-100 through 10^100 )
+-333 , 7339195 , -329 , 4586997 , -326 , 5733746 , -323 , 7167183 , -319 , 4479489 ,
+-316 , 5599361 , -313 , 6999202 , -309 , 4374501 , -306 , 5468126 , -303 , 6835158 ,
+-299 , 4271974 , -296 , 5339967 , -293 , 6674959 , -290 , 8343699 , -286 , 5214812 ,
+-283 , 6518515 , -280 , 8148143 , -276 , 5092589 , -273 , 6365737 , -270 , 7957171 ,
+-266 , 4973232 , -263 , 6216540 , -260 , 7770675 , -256 , 4856672 , -253 , 6070840 ,
+-250 , 7588550 , -246 , 4742843 , -243 , 5928554 , -240 , 7410693 , -236 , 4631683 ,
+-233 , 5789604 , -230 , 7237005 , -226 , 4523128 , -223 , 5653910 , -220 , 7067388 ,
+-216 , 4417117 , -213 , 5521397 , -210 , 6901746 , -206 , 4313591 , -203 , 5391989 ,
+-200 , 6739986 , -196 , 4212491 , -193 , 5265614 , -190 , 6582018 , -187 , 8227522 ,
+-183 , 5142201 , -180 , 6427752 , -177 , 8034690 , -173 , 5021681 , -170 , 6277101 ,
+-167 , 7846377 , -163 , 4903985 , -160 , 6129982 , -157 , 7662477 , -153 , 4789048 ,
+-150 , 5986310 , -147 , 7482888 , -143 , 4676805 , -140 , 5846006 , -137 , 7307508 ,
+-133 , 4567192 , -130 , 5708990 , -127 , 7136238 , -123 , 4460149 , -120 , 5575186 ,
+-117 , 6968982 , -113 , 4355614 , -110 , 5444517 , -107 , 6805647 , -103 , 4253529 ,
+-100 , 5316911 , -97 , 6646139 , -94 , 8307674 , -90 , 5192296 , -87 , 6490371 , 
+-84 , 8112963 , -80 , 5070602 , -77 , 6338253 , -74 , 7922816 , -70 , 4951760 ,
+-67 , 6189700 , -64 , 7737125 , -60 , 4835703 , -57 , 6044629 , -54 , 7555786 ,
+-50 , 4722366 , -47 , 5902958 , -44 , 7378697 , -40 , 4611686 , -37 , 5764607 ,
+-34 , 7205759 , -30 , 4503599 , -27 , 5629499 , -24 , 7036874 , -20 , 4398046 ,
+-17 , 5497558 , -14 , 6871947 , -10 , 4294967 , -7 , 5368709 , -4 , 6710886 ,
+0 , 4194304 , 3 , 5242880 , 6 , 6553600 , 9 , 8192000 , 13 , 5120000 ,
+16 , 6400000 , 19 , 8000000 , 23 , 5000000 , 26 , 6250000 , 29 , 7812500 ,
+33 , 4882812 , 36 , 6103515 , 39 , 7629394 , 43 , 4768371 , 46 , 5960464 ,
+49 , 7450580 , 53 , 4656612 , 56 , 5820766 , 59 , 7275957 , 63 , 4547473 ,
+66 , 5684341 , 69 , 7105427 , 73 , 4440892 , 76 , 5551115 , 79 , 6938893 ,
+83 , 4336808 , 86 , 5421010 , 89 , 6776263 , 93 , 4235164 , 96 , 5293955 ,
+99 , 6617444 , 102 , 8271806 , 106 , 5169878 , 109 , 6462348 , 112 , 8077935 , 
+116 , 5048709 , 119 , 6310887 , 122 , 7888609 , 126 , 4930380 , 129 , 6162975 ,
+132 , 7703719 , 136 , 4814824 , 139 , 6018531 , 142 , 7523163 , 146 , 4701977 ,
+149 , 5877471 , 152 , 7346839 , 156 , 4591774 , 159 , 5739718 , 162 , 7174648 ,
+166 , 4484155 , 169 , 5605193 , 172 , 7006492 , 176 , 4379057 , 179 , 5473822 ,
+182 , 6842277 , 186 , 4276423 , 189 , 5345529 , 192 , 6681911 , 195 , 8352389 ,
+199 , 5220243 , 202 , 6525304 , 205 , 8156630 , 209 , 5097894 , 212 , 6372367 ,
+215 , 7965459 , 219 , 4978412 , 222 , 6223015 , 225 , 7778769 , 229 , 4861730 ,
+232 , 6077163 , 235 , 7596454 , 239 , 4747783 , 242 , 5934729 , 245 , 7418412 ,
+249 , 4636507 , 252 , 5795634 , 255 , 7244543 , 259 , 4527839 , 262 , 5659799 ,
+265 , 7074749 , 269 , 4421718 , 272 , 5527147 , 275 , 6908934 , 279 , 4318084 ,
+282 , 5397605 , 285 , 6747006 , 289 , 4216879 , 292 , 5271098 , 295 , 6588873 ,
+298 , 8236092 , 302 , 5147557 , 305 , 6434446 , 308 , 8043058 , 312 , 5026911 ,
+315 , 6283639 , 318 , 7854549 , 322 , 4909093 , 325 , 6136366 , 328 , 7670458 ,
+332 , 4794036 ,
+
+: FABS >R $7FFFFF AND R> ;
+
+: 10^N@ 100 + 2* 10^N + F@ ;
+
+: POW10@ FABS DUP I>F LN2/LN10 F@ F* F>I
+	2 - 
+	DUP -100 < 
+	IF -100 DUP POW10 ! 10^N@ EXIT THEN
+	>R
+	BEGIN
+		OVER OVER
+		I 10^N@ F- F0<
+		IF DROP DROP R> 1- DUP POW10 ! 10^N@ EXIT
+		ELSE 
+			R> 1+ 
+			DUP 100 = 
+			IF DUP POW10 ! 10^N@ EXIT
+			ELSE >R
+			THEN
+		THEN
+	AGAIN ;
+
+: F.	DUP ABS 230 - 0< IF ELSE DROP DROP ." **** " EXIT THEN
+		BASE @ >R $A BASE !
+		FIFR . $2E EMIT FABS
+		NFSIG @ 1- FOR
+			10.0 F@ F* FIFR DIGIT EMIT
+		NEXT DROP DROP 
+		R> BASE ! ;
+		
+: E. 	DUP ABS 230 - 0< IF ELSE DROP DROP ." **** " EXIT THEN
+		BASE @ >R $A BASE !
+		OVER OVER XOR 0= 
+		IF F. $45 EMIT 0 . R> BASE ! EXIT THEN
+		OVER OVER POW10@ F/ F. $45 EMIT POW10 @ . 
+		R> BASE ! ;
+
+: P@1+
+	FPTR @ DUP FPLIM @ = 
+	IF DROP 0 EXIT
+	ELSE DUP 1+ FPTR
+ 	! @ -1
+	THEN ;
+
+: FNUM?					( a -- n expn T | a F )
+	0 FS ! 0 ES !
+	DUP COUNT OVER OVER + FPLIM ! DROP FPTR ! 0 0 
+	P@1+ 0= IF DROP DROP 0 EXIT THEN
+	  $2D = IF $800000 FS ! ELSE -1 FPTR +! THEN  ( - )
+	BEGIN
+		P@1+ 0= IF DROP DROP 0 EXIT THEN
+		$A DIGIT?
+	WHILE
+		>R 10.0 F@ F* R> I>F F+
+	REPEAT DROP
+	-1 FPTR +!
+	P@1+ DROP $2E XOR IF DROP DROP 0 EXIT THEN
+	99 PLACE !
+	BEGIN
+		P@1+ 0= IF >R FS @ XOR >R DROP R> R> -1 EXIT THEN
+		$A DIGIT? 
+	WHILE
+		I>F PLACE @ 2* 10^N + F@ F* F+ -1 PLACE +!
+	REPEAT DROP
+	-1 FPTR +!
+	P@1+ DROP $45 XOR IF DROP DROP 0 EXIT THEN
+	P@1+ 0= IF DROP DROP 0 EXIT THEN
+		$2D = IF -1 ES ! ELSE -1 FPTR +! THEN
+	0
+	BEGIN
+		P@1+
+	WHILE
+		$A DIGIT? NOT IF DROP DROP DROP DROP 0 EXIT THEN
+		>R $A * R> +
+	REPEAT
+	ES @ IF NEGATE THEN
+	100 + 2* 10^N + F@ F*
+	>R FS @ XOR >R DROP R> R> -1 ;
+
+( CREATE TEST 10 ALLOT
+: TMOVE COUNT >R 1- TEST R>
+	FOR OVER @ OVER ! 1+ >R 1+ R> NEXT DROP DROP ; 
+: T1 $" 1.75" TMOVE TEST FNUM? ;
+: T2 $" -1.75" TMOVE TEST FNUM? ;
+: T3 $" 1.75E4" TMOVE TEST FNUM? ;
+: T4 $" 1.75E-4" TMOVE TEST FNUM? ;
+: T5 $" -1.75E4" TMOVE TEST FNUM? ;
+: T6 $" -1.75E-4" TMOVE TEST FNUM? ;
+: T7 $" 1.7G" TMOVE TEST FNUM? ;
+: T8 $" 175" TMOVE TEST FNUM? ;
+: T9 $" 1.75E4G" TMOVE TEST FNUM? ; )
+
+: $interpret ( a -- )								( substitute for system $INTERPRET )
+	NAME?  ?DUP
+	IF @ $400000 AND
+		ABORT" compile only" push ret ( EXECUTE EXIT )
+	THEN DROP 
+	TEXT
+	NUMBER?	IF EXIT THEN 
+	FNUM? 	IF EXIT THEN
+	ERROR ;
+$1004A8 ' $interpret 5 + !  ( patch to ABORT" compilation )
+
+: $compile ( a -- )									( substitute for system $COMPILE )
+	NAME? ?DUP
+	IF @ $800000 AND
+		IF ( EXECUTE ) push ret
+		ELSE $3FFFF AND $100000 + ,,
+		THEN EXIT
+	THEN DROP 
+	TEXT
+	NUMBER?	IF $28A28A ,i , EXIT THEN
+	FNUM?		IF SWAP $28A28A ,i , $28A28A ,i , EXIT THEN
+	ERROR ;
+
+: insfp 
+	[ ' $interpret ] ldi [ ' $INTERPRET ] ldi !
+	[ ' $compile ] ldi [ ' $COMPILE ] ldi ! ;
+insfp
+
+: NOFP 
+	[ ' NAME? ] ldi $100000 + DUP
+	[ ' $INTERPRET ] ldi !	
+	[ ' $COMPILE ] ldi ! ;
+
+( : SPLIT dup [ $FC0000 ] ldi and rr8 rr8 shr shr .
+        dup [  $3F000 ] ldi and rr8 shr shr shr shr .
+        dup [    $FC0 ] ldi and shr shr shr shr shr shr .
+            [     $3F ] ldi and . ; )
+
+CREATE LN2 2 ALLOT 0.6931472 LN2 F!
+
+: LN >R 0 0. TSUM F!
+	2DUP 1. F+ >R >R -1. F+ 
+	R> R> F/ 2DUP 2DUP F* TVAR2 F!
+	5 FOR 
+		2DUP 5 I - 2* 1+ I>F F/
+		TSUM F@ F+ TSUM F!
+		TVAR2 F@ F*
+	NEXT 2DROP TSUM F@ 1+
+	R> I>F LN2 F@ F* F+ ; 	 
+
+HERE 0 CODEADR1 !										( mark end of FP code section )
+0 . HERE .
