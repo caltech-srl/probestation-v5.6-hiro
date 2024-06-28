@@ -662,7 +662,7 @@ case "$RUN_LVL" in
 	"4") # run individual scope out mode
 	    if [ $MISC_ON = "n" ]; then
 	       conf_4vsel
-               upload_md
+          upload_md
 	       set_4vsel
 	       run_mterm
 	       init_misc

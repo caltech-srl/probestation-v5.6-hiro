@@ -1,4 +1,4 @@
-from functions import kill_mterm_mcmdr
+from functions import kill_mterm_mcmdr, conf_4vsel, upload_md, init_scope,set_4vsel, run_globaldc, run_mterm, run_stimtest, run_hiroplot
 import time
 
 
@@ -20,8 +20,15 @@ while True:
 #Power On Test
 if test == 1:
     STIMTIME = 60
-    
+    conf_4vsel()
     kill_mterm_mcmdr()
+    upload_md()
+    init_scope()
+    set_4vsel()
+    run_globaldc()
+    run_mterm()
+    run_stimtest()
+    run_hiroplot(STIMTIME)
     
 
 #4VSEL Test
