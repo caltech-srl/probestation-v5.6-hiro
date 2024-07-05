@@ -1,4 +1,5 @@
 from functions import kill_mterm_mcmdr, conf_4vsel, upload_md, init_scope,set_4vsel, run_globaldc, run_mterm, run_stimtest, run_hiroplot
+from functions import init_misc, run_scope_cpm, set_4vsel_scope, run_mcmdr, save_4vsel
 import time
 
 
@@ -34,6 +35,15 @@ if test == 1:
 #4VSEL Test
 elif test == 2:
     kill_mterm_mcmdr()
+    upload_md()
+    init_scope()
+    run_mterm()
+    init_misc()
+    SSCAN="n"
+    run_scope_cpm()
+    set_4vsel_scope()
+    run_mcmdr()
+    save_4vsel()
 
 
 #Full Scan

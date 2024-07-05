@@ -4,6 +4,7 @@ import subprocess
 import time
 import os
 
+# TEST 1
 
 def kill_process(process_name): # kill_mterm function
     """Kill all processes matching the given process name."""
@@ -15,7 +16,7 @@ def kill_process(process_name): # kill_mterm function
             print(f"{process_name} not found")
 
 
-def kill_mterm_mcmdr(): # tests 1, 2, 3
+def kill_mterm_mcmdr(): 
     # Kill all mterm processes
     kill_process('mterm')
 
@@ -23,9 +24,11 @@ def kill_mterm_mcmdr(): # tests 1, 2, 3
     kill_process('mcmdr')
 
 
-def conf_4vsel(): # tests 1, 3, 4
+def conf_4vsel(): 
     # lines 237-245
     # Define the paths and filenames
+    global OUTFL2
+    global V4VSEL
     OUTFL2 = './v6.0/output/outfl2.txt'
     V4VSEL = './v6.0/output/v4vsel.txt'
     ASIC = 'Your_ASIC_Value'  # Define your ASIC value
@@ -47,7 +50,7 @@ def conf_4vsel(): # tests 1, 3, 4
         file.write(new_v4vsel)
 
 
-def upload_md(outfl, suf_log): # tests 1, 2, 3, 4
+def upload_md(outfl, suf_log): 
     #lines 201-204
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_message = f"{now} UPLOAD MD"
@@ -74,11 +77,11 @@ def upload_md(outfl, suf_log): # tests 1, 2, 3, 4
             time.sleep(delay)
 
 
-def init_scope():
+def init_scope(): 
     subprocess.run(["$SC_SET"], stdin=open("tek_normal.ini"))
 
 
-def set_4vsel():
+def set_4vsel(): 
     # Define file paths (these should be set according to your environment)
     OUTFL2 = './v6.0/output/outfl2.txt'
     V4VSEL = './v6.0/output/v4vsel.txt'
@@ -122,6 +125,7 @@ CMD!
 def run_globaldc(): 
     # From CHatGPT, revisit later to try and understand
     # Define the paths and filenames (replace these with your actual paths and filenames)
+    global SUF_LOG
     OUTFL = './v6.0/output/outfl.txt'
     SUF_LOG = './v6.0/output/logfile.txt'
     TYP_GDC = '_globaldc'
@@ -236,3 +240,61 @@ def run_hiroplot(stimtime):
     print("\n")
 
     subprocess.run(['./hiroplot-db.exe', '-I', f'{OUTFL}{SUF_BIN}', '-m'])
+
+
+# TEST 2
+
+# kill_mterm_mcmdr()
+# upload_md()
+# init_scope()
+# run_mterm()
+
+def init_misc():
+    subprocess.run(['./mupld_c.exe', '-I', 'misc_scini.txt'])
+    time.sleep(3)
+
+def run_scope_cpm():
+    # Log the date and SCOPE_CPM
+    OUTFL_SUF_LOG = SUF_LOG
+    SC_INI="./dpo4104.exe"
+    with open(OUTFL_SUF_LOG, 'a') as log_file:
+        log_file.write(f"{datetime.now()} SCOPE_CPM\n")
+    
+    # Run the sc_ini command and redirect output to _1.txt
+    with open('_1.txt', 'w') as output_file:
+        subprocess.run([SC_INI], stdout=output_file)
+    
+    # Sleep for 8 seconds
+    time.sleep(8)
+
+def set_4vsel_scope():
+    SC_SET="./dpo4104_set.exe"
+    with open('tek_cpmode2.ini', 'r') as input_file:
+        subprocess.run([SC_SET], stdin=input_file)
+
+def run_mcmdr():
+    # Print messages to the console
+    print("Now you are directory connected to MISC.")
+    print("type 4VSEL ? to see what is the current setting")
+    print("watch oscilloscope to minimize the saw tooth with adjusting 4VSEL value")
+    print("to change 4VSEL, type .")
+    print("number 4VSEL !")
+    print("CMD!")
+    print("number should be something near 45.")
+    print("To quit from this mode, type :q")
+    
+    # Sleep for 3 seconds
+    time.sleep(3)
+    
+    # Run the mcmdr.exe command with the -s flag
+    subprocess.run(['./mcmdr.exe', '-s'])
+
+def save_4vsel():
+    outfl2_v4vsel = OUTFL2 + V4VSEL  # Example output file
+
+    # Prompt the user for input
+    optimal_4vsel = input("Enter optimal 4VSEL value: ")
+
+    # Write the input to the output file
+    with open(outfl2_v4vsel, 'w') as output_file:
+        output_file.write(optimal_4vsel)

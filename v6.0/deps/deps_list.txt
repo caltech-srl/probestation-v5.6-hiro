@@ -27,3 +27,5 @@ _ana.txt
 misc_pulse.txt
 msave.exe
 ./hiroplot-db.exe
+
+./mcmdr.exe
