@@ -1,4 +1,3 @@
-import psutil
 from datetime import datetime
 import subprocess
 import time
