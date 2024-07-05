@@ -5,23 +5,28 @@ import time
 import os
 
 # TEST 1
+def kill_process(process_name):
+    """Kill all processes matching the given process name using Cygwin commands."""
+    try:
+        # List all processes
+        result = subprocess.run(['ps', '-a'], stdout=subprocess.PIPE, text=True)
+        processes = result.stdout.splitlines()
 
-def kill_process(process_name): # kill_mterm function
-    """Kill all processes matching the given process name."""
-    for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'] == process_name:
-            #print(f"Killing {process_name} process with PID {proc.info['pid']}")
-            proc.kill()
-        else:
-            print(f"{process_name} not found")
+        for process in processes:
+            if process_name in process:
+                pid = process.split()[0]
+                subprocess.run(['kill', '-9', pid])
+                print(f"Killed {process_name} process with PID {pid}")
+    except Exception as e:
+        print(f"Error occurred: {e}")
 
-
-def kill_mterm_mcmdr(): 
+def kill_mterm_mcmdr():
     # Kill all mterm processes
     kill_process('mterm')
 
     # Kill all mcmdr processes
     kill_process('mcmdr')
+
 
 
 def conf_4vsel(): 
