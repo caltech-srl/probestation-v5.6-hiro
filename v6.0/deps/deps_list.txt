@@ -29,3 +29,4 @@ msave.exe
 ./hiroplot-db.exe
 
 ./mcmdr.exe
+4vsel_def.ini
